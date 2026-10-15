@@ -14,6 +14,8 @@ const SCHEDULER_TICK_MS = 5_000;
 const DIGEST_TICK_MS = 5 * MINUTE;
 const PRUNE_TICK_MS = 6 * 60 * MINUTE;
 const IDLE_MS = 750;
+const LOOP_ERROR_BACKOFF_MS = 3_000;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const SIDE_SLOTS = 2;
 
 const gate = new DomainGate({ ...DEFAULT_POLICY, minGapMs: config.domainGapMs });
@@ -142,29 +144,40 @@ function track(promise: Promise<void>, onDone: () => void): void {
   inFlight.add(tracked);
 }
 
+/** One pass of the job loop; returns whether any job was started. */
+async function pumpOnce(): Promise<boolean> {
+  let started = false;
+  if (checkSlots < config.checkConcurrency) {
+    const job = await claim(
+      ["check"],
+      (j) => !runningTargets.has(String(j.payload.targetId)) && (!j.host || gate.waitMs(j.host, Date.now()) === 0),
+    );
+    if (job) {
+      checkSlots++;
+      track(runCheckJob(job), () => checkSlots--);
+      started = true;
+    }
+  }
+  if (sideSlots < SIDE_SLOTS) {
+    const job = await claim(["summarize", "notify", "digest"], () => true);
+    if (job) {
+      sideSlots++;
+      track(runSideJob(job), () => sideSlots--);
+      started = true;
+    }
+  }
+  return started;
+}
+
+/** The job loop. A failed pass (e.g. the database is briefly busy) is logged and retried, never fatal. */
 async function pump(): Promise<void> {
   while (running) {
-    let started = false;
-    if (checkSlots < config.checkConcurrency) {
-      const job = await claim(
-        ["check"],
-        (j) => !runningTargets.has(String(j.payload.targetId)) && (!j.host || gate.waitMs(j.host, Date.now()) === 0),
-      );
-      if (job) {
-        checkSlots++;
-        track(runCheckJob(job), () => checkSlots--);
-        started = true;
-      }
+    try {
+      if (!(await pumpOnce())) await sleep(IDLE_MS);
+    } catch (error) {
+      log("worker", `loop error, retrying in ${LOOP_ERROR_BACKOFF_MS / 1000}s: ${(error as Error).message}`);
+      await sleep(LOOP_ERROR_BACKOFF_MS);
     }
-    if (sideSlots < SIDE_SLOTS) {
-      const job = await claim(["summarize", "notify", "digest"], () => true);
-      if (job) {
-        sideSlots++;
-        track(runSideJob(job), () => sideSlots--);
-        started = true;
-      }
-    }
-    if (!started) await new Promise((r) => setTimeout(r, IDLE_MS));
   }
 }
 

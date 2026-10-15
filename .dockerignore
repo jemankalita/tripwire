@@ -1,0 +1,11 @@
+node_modules
+.next
+data
+.e2e
+.taste-skill
+coverage
+.git
+.env*
+!.env.example
+npm-debug.log*
+*.tsbuildinfo

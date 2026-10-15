@@ -324,6 +324,43 @@ All optional. See `.env.example`.
 
 ---
 
+## Deployment
+
+Tripwire needs **one always-on server with a persistent disk**. The background worker must run continuously, Chromium needs room, and the SQLite database and screenshots must survive restarts. That is why serverless hosts such as Vercel can't run it as-is.
+
+The repo ships a production `Dockerfile`, built on the official Playwright image (Node + Chromium + system libraries). It runs the web app and the worker together, with data on a volume at `/data`. `railway.json` configures Railway's build and the `/api/health` check.
+
+### Railway (recommended, about 10 minutes)
+
+1. Sign in at [railway.com](https://railway.com) with GitHub.
+2. Choose **New Project → Deploy from GitHub repo → `jemankalita/tripwire`**. Railway detects the Dockerfile automatically.
+3. Right-click the service, choose **Attach volume**, and set the mount path to **`/data`**.
+4. Under **Settings → Networking → Generate Domain**, copy the URL (e.g. `https://tripwire-production.up.railway.app`).
+5. Under **Variables**, add:
+   - `APP_URL` = the domain from step 4 (required: used in alert links and RSS)
+   - Optional: `ANTHROPIC_API_KEY` (AI summaries), `SMTP_URL` + `MAIL_FROM` (real email), `TELEGRAM_BOT_TOKEN` (Telegram)
+6. Redeploy. When `/api/health` returns `{"ok":true,…}`, open the domain and sign up.
+
+Give the service at least **1 GB of RAM**, because Chromium needs it.
+
+### Any other Docker host (Render, Fly.io, a VPS)
+
+```bash
+docker build -t tripwire .
+docker run -d -p 3000:3000 -v tripwire-data:/data \
+  -e APP_URL=https://your-domain.example \
+  --name tripwire tripwire
+```
+
+- **Render:** use a "Web Service" from the repo (Docker runtime) with a **Persistent Disk** mounted at `/data`.
+- **Fly.io:** run `fly launch`, then `fly volumes create data` and mount it at `/data`.
+
+### Production notes
+
+- `NODE_ENV=production` is set by the image. The localhost demo override (`TRIPWIRE_ALLOW_PRIVATE`) is ignored in production, so the chaos site isn't available there. Demo with real public pages.
+- Run the container where outbound traffic to private networks is blocked if you can (see [Known limitations](#known-limitations)).
+- Back up the `/data` volume. It holds the database (`tripwire.db`) and all screenshots.
+
 ## Security
 
 - **SSRF protection:**

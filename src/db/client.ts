@@ -6,6 +6,8 @@ import * as schema from "./schema";
 
 export type Db = LibSQLDatabase<typeof schema>;
 
+const BUSY_TIMEOUT_MS = 10_000;
+
 const DEFAULT_URL = `file:${path.join(process.cwd(), "data", "tripwire.db").replace(/\\/g, "/")}`;
 
 function databaseUrl(): string {
@@ -25,13 +27,14 @@ const globalForDb = globalThis as unknown as { __tripwireDb?: Handle };
 function open(): Handle {
   const url = databaseUrl();
   ensureDir(url);
-  const client = createClient({ url, authToken: process.env.DATABASE_AUTH_TOKEN });
+  // `timeout` is the busy timeout applied to EVERY pooled connection (a PRAGMA would
+  // only reach one of them), so the web app and worker wait for each other's writes
+  // instead of failing with SQLITE_BUSY. Foreign keys are on by default per connection.
+  const client = createClient({ url, authToken: process.env.DATABASE_AUTH_TOKEN, timeout: BUSY_TIMEOUT_MS });
   const ready = (async () => {
     if (!url.startsWith("file:")) return;
-    // Web app and worker share one SQLite file: WAL + busy timeout let them coexist.
+    // WAL is stored in the database file itself, so setting it once covers every connection.
     await client.execute("PRAGMA journal_mode = WAL");
-    await client.execute("PRAGMA busy_timeout = 5000");
-    await client.execute("PRAGMA foreign_keys = ON");
   })();
   return { client, db: drizzle(client, { schema }), ready };
 }
