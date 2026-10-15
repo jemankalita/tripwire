@@ -158,7 +158,10 @@ function SettingsBody({ data, mutate }: { data: Me; mutate: () => Promise<unknow
         <ul className="grid max-w-xl gap-2 text-sm">
           {[
             ["One-line AI summaries", data.features.ai],
-            ["SMTP email delivery", data.features.smtp],
+            [
+              data.features.email === "resend" ? "Email delivery (Resend)" : data.features.email === "smtp" ? "Email delivery (SMTP)" : "Email delivery (Inbox only)",
+              data.features.email !== "inbox",
+            ],
             ["Telegram bot", data.features.telegram],
           ].map(([label, on]) => (
             <li key={String(label)} className="flex items-center justify-between rounded-[8px] bg-panel px-3 py-2">

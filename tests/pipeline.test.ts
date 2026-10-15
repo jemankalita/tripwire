@@ -257,6 +257,49 @@ describe("Browser extension", () => {
   });
 });
 
+describe("Email delivery", () => {
+  it("delivers through Resend's HTTPS API when RESEND_API_KEY is set, and keeps an inbox copy", async () => {
+    const { vi } = await import("vitest");
+    vi.stubEnv("RESEND_API_KEY", "re_test_key");
+    const realFetch = globalThis.fetch;
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    globalThis.fetch = (async (url: string, init: RequestInit) => {
+      calls.push({ url: String(url), init });
+      return new Response(JSON.stringify({ id: "email_123" }), { status: 200 });
+    }) as typeof fetch;
+    try {
+      expect(m.notify.emailProvider()).toBe("resend");
+      await m.notify.sendEmail({ userId, to: "me@example.com", subject: "Resend check", html: "<p>hi</p>", text: "hi" });
+      expect(calls).toHaveLength(1);
+      expect(calls[0].url).toBe("https://api.resend.com/emails");
+      expect((calls[0].init.headers as Record<string, string>).Authorization).toBe("Bearer re_test_key");
+      const body = JSON.parse(String(calls[0].init.body));
+      expect(body).toMatchObject({ to: ["me@example.com"], subject: "Resend check", from: "Tripwire <onboarding@resend.dev>" });
+      const { eq } = m.orm;
+      const copies = await m.db.db.select().from(m.schema.outbox).where(eq(m.schema.outbox.subject, "Resend check"));
+      expect(copies).toHaveLength(1);
+    } finally {
+      globalThis.fetch = realFetch;
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("does not record an inbox copy when the provider rejects the email (so a retry can't duplicate it)", async () => {
+    const { vi } = await import("vitest");
+    vi.stubEnv("RESEND_API_KEY", "re_test_key");
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () => new Response("domain not verified", { status: 403 })) as typeof fetch;
+    try {
+      await expect(m.notify.sendEmail({ userId, to: "x@example.com", subject: "Rejected", html: "", text: "" })).rejects.toThrow(/Resend responded 403/);
+      const { eq } = m.orm;
+      expect(await m.db.db.select().from(m.schema.outbox).where(eq(m.schema.outbox.subject, "Rejected"))).toHaveLength(0);
+    } finally {
+      globalThis.fetch = realFetch;
+      vi.unstubAllEnvs();
+    }
+  });
+});
+
 describe("Redirects", () => {
   it("follows each redirect hop through the request guard", async () => {
     const { watchId, targetId } = await watchOn("/moved");

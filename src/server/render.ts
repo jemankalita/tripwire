@@ -115,11 +115,17 @@ async function guardContext(context: BrowserContext): Promise<void> {
     // Chromium follows redirects without routing them, so fetch every request
     // ourselves with redirects disabled and vet each Location hop first. The
     // browser then requests the next hop, which passes through this guard again.
+    // One retry absorbs transient socket resets (e.g. a keep-alive connection closed by
+    // the server mid-request) so a blip isn't mistaken for the site being down.
     let response;
     try {
       response = await route.fetch({ maxRedirects: 0, timeout: config.navTimeoutMs });
     } catch {
-      return route.abort("failed");
+      try {
+        response = await route.fetch({ maxRedirects: 0, timeout: config.navTimeoutMs });
+      } catch {
+        return route.abort("failed");
+      }
     }
     const location = response.headers()["location"];
     if (response.status() >= 300 && response.status() < 400 && location) {

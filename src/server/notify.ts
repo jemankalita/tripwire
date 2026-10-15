@@ -72,13 +72,45 @@ ${rows}
 </table></td></tr></table>`;
 }
 
-export async function sendEmail(input: { userId: string | null; to: string; subject: string; html: string; text: string }): Promise<void> {
-  // SMTP first (when configured): if it fails, the retry won't leave a duplicate in the inbox.
-  if (config.smtpUrl) {
-    const transport = nodemailer.createTransport(config.smtpUrl);
+type EmailInput = { userId: string | null; to: string; subject: string; html: string; text: string };
+
+/** Which provider delivers email. Read at call time so configuration changes need no rebuild. */
+export function emailProvider(): "resend" | "smtp" | "inbox" {
+  if (process.env.RESEND_API_KEY) return "resend";
+  if (process.env.SMTP_URL) return "smtp";
+  return "inbox";
+}
+
+const RESEND_ENDPOINT = "https://api.resend.com/emails";
+// Resend's shared sender works without a verified domain (delivers to your own Resend account email).
+const RESEND_DEFAULT_FROM = "Tripwire <onboarding@resend.dev>";
+
+/** Email over HTTPS. Hosts such as Railway block outbound SMTP on lower plans; HTTPS always works. */
+async function sendViaResend(input: EmailInput): Promise<void> {
+  const res = await fetch(RESEND_ENDPOINT, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.MAIL_FROM || RESEND_DEFAULT_FROM,
+      to: [input.to],
+      subject: input.subject,
+      html: input.html,
+      text: input.text,
+    }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) throw new Error(`Resend responded ${res.status}: ${(await res.text()).slice(0, 200)}`);
+}
+
+export async function sendEmail(input: EmailInput): Promise<void> {
+  // Deliver first: if it fails, the retry won't leave a duplicate in the inbox.
+  const provider = emailProvider();
+  if (provider === "resend") await sendViaResend(input);
+  if (provider === "smtp") {
+    const transport = nodemailer.createTransport(process.env.SMTP_URL!);
     await transport.sendMail({ from: config.mailFrom, to: input.to, subject: input.subject, html: input.html, text: input.text });
   }
-  // Every email also lands in the in-app inbox, so alerts are visible without SMTP.
+  // Every email also lands in the in-app inbox, so alerts are visible with no provider at all.
   await db.insert(outbox).values({ id: newId(), ...input, createdAt: Date.now() });
 }
 

@@ -306,7 +306,8 @@ All optional. See `.env.example`.
 | `CHECK_CONCURRENCY` / `DOMAIN_GAP_MS` | `3` / `10000` | Parallel renders, minimum gap per host |
 | `RESPECT_ROBOTS` | `1` | Honour robots.txt |
 | `ANTHROPIC_API_KEY`, `CLAUDE_SUMMARY_MODEL` | (unset) / `claude-opus-5-5` | AI summaries |
-| `SMTP_URL`, `MAIL_FROM` | (unset) | Real email delivery; otherwise emails appear in the in-app Inbox |
+| `RESEND_API_KEY` | (unset) | Real email delivery over HTTPS via [Resend](https://resend.com) — **use this on Railway**, which blocks SMTP on Trial/Hobby plans |
+| `SMTP_URL`, `MAIL_FROM` | (unset) | Email via SMTP (hosts that allow it); `MAIL_FROM` also sets Resend's sender once you verify a domain |
 | `TELEGRAM_BOT_TOKEN` | (unset) | Telegram alerts |
 | `TRUST_PROXY` | `0` | Trust `X-Forwarded-For` for rate limiting (only behind your own proxy) |
 
@@ -338,7 +339,7 @@ The repo ships a production `Dockerfile`, built on the official Playwright image
 4. Under **Settings → Networking → Generate Domain**, copy the URL (e.g. `https://tripwire-production.up.railway.app`).
 5. Under **Variables**, add:
    - `APP_URL` = the domain from step 4 (required: used in alert links and RSS)
-   - Optional: `ANTHROPIC_API_KEY` (AI summaries), `SMTP_URL` + `MAIL_FROM` (real email), `TELEGRAM_BOT_TOKEN` (Telegram)
+   - Optional: `RESEND_API_KEY` (real email — Railway blocks SMTP on Trial/Hobby, so use Resend), `ANTHROPIC_API_KEY` (AI summaries), `TELEGRAM_BOT_TOKEN` (Telegram)
 6. Redeploy. When `/api/health` returns `{"ok":true,…}`, open the domain and sign up.
 
 Give the service at least **1 GB of RAM**, because Chromium needs it.

@@ -14,7 +14,7 @@ export type Preview = Awaited<ReturnType<typeof createPreview>>;
 export type PublicUser = ReturnType<typeof publicUser>;
 export type Me = {
   user: PublicUser;
-  features: { ai: boolean; smtp: boolean; telegram: boolean; confirmDelayMs: number };
+  features: { ai: boolean; email: "resend" | "smtp" | "inbox"; telegram: boolean; confirmDelayMs: number };
 };
 export type InboxEmail = { id: string; to: string; subject: string; html: string; text: string; createdAt: number };
 

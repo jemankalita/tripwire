@@ -88,7 +88,16 @@ export function Channels({ features }: { features?: Me["features"] }) {
   };
 
   const fieldCopy: Record<ChannelType, { label: string; placeholder: string; hint: string }> = {
-    email: { label: "Email address", placeholder: "alerts@example.com", hint: features?.smtp ? "Sent via your SMTP server and copied to the Inbox tab." : "SMTP isn’t configured, so emails land in the Inbox tab." },
+    email: {
+      label: "Email address",
+      placeholder: "alerts@example.com",
+      hint:
+        features?.email === "resend"
+          ? "Delivered by Resend and copied to the Inbox tab."
+          : features?.email === "smtp"
+            ? "Sent via your SMTP server and copied to the Inbox tab."
+            : "No email provider is set up yet, so emails land in the Inbox tab. Add RESEND_API_KEY on the server to deliver them.",
+    },
     discord: { label: "Webhook URL", placeholder: "https://discord.com/api/webhooks/…", hint: "Server Settings → Integrations → Webhooks → New Webhook → Copy URL." },
     telegram: {
       label: "Chat ID",

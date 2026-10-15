@@ -20,6 +20,7 @@ describe("normalizeLine", () => {
     ["req 3f2a9c1e-77b0-4e7a-9d2b-0c1f5e6a7b8c", "req ‹id›"],
     ["build a1b2c3d4e5f60718293a", "build ‹hex›"],
     ["csrf Zx9Kq2Lm8Np4Rt6Vw1Yb3Cd5Ef", "csrf ‹token›"],
+    ["csrf -x9Kq2Lm8Np4Rt6Vw1Yb3Cd5E_", "csrf ‹token›"],
     ["12,431 views", "‹count›"],
     ["Followers: 1.2k", "‹count›"],
   ])("normalizes %j", (input, expected) => {

@@ -35,7 +35,8 @@ export const NOISE_RULES: readonly Rule[] = [
   // UUIDs, long hex, random base64-ish tokens (must mix letters and digits)
   [/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, "‹id›"],
   [/\b[0-9a-f]{16,}\b/gi, "‹hex›"],
-  [/\b(?=[A-Za-z0-9_-]*\d)(?=[A-Za-z0-9_-]*[A-Za-z])[A-Za-z0-9_-]{24,}\b/g, "‹token›"],
+  // Explicit boundaries (not \b): base64url tokens may start or end with "-" or "_".
+  [/(?<![A-Za-z0-9_-])(?=[A-Za-z0-9_-]*\d)(?=[A-Za-z0-9_-]*[A-Za-z])[A-Za-z0-9_-]{24,}(?![A-Za-z0-9_-])/g, "‹token›"],
   // Counters: "1,234 views", "12.5k followers", "Views: 1,234"
   [new RegExp(`\\b\\d[\\d,.\\s]*[kKmM]?\\+?\\s*${COUNTER_NOUNS}\\b`, "gi"), "‹count›"],
   [new RegExp(`\\b${COUNTER_NOUNS}\\s*[:：]?\\s*\\d[\\d,.]*[kKmM]?\\b`, "gi"), "‹count›"],
