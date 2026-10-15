@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tripwire</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#26251e" />
+        <path d="M5 19 H12.5 L15 9 L18.5 24 L20.5 19 H27" fill="none" stroke="#dfdedb" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <span>Tripwire</span>
+      <button id="open-settings" class="link" type="button">Settings</button>
+    </header>
+
+    <section id="settings" hidden>
+      <p class="lead">Connect to your Tripwire server.</p>
+      <label for="server">Server address</label>
+      <input id="server" type="url" placeholder="http://localhost:3000" autocomplete="off" />
+      <label for="token">API token</label>
+      <input id="token" type="password" placeholder="tw_…" autocomplete="off" />
+      <p class="hint">Create one in Tripwire → Settings → Browser extension.</p>
+      <button id="save-settings" class="primary" type="button">Connect</button>
+    </section>
+
+    <section id="main" hidden>
+      <p id="page-url" class="url"></p>
+      <label for="name">Name</label>
+      <input id="name" type="text" maxlength="120" />
+      <label for="interval">Check every</label>
+      <select id="interval">
+        <option value="15">15 minutes</option>
+        <option value="30">30 minutes</option>
+        <option value="60" selected>hour</option>
+        <option value="360">6 hours</option>
+        <option value="1440">day</option>
+      </select>
+      <p id="selection" class="hint"></p>
+      <div class="row">
+        <button id="pick" type="button">Pick regions</button>
+        <button id="watch" class="primary" type="button">Watch this page</button>
+      </div>
+    </section>
+
+    <p id="status" role="status" aria-live="polite"></p>
+    <script src="popup.js"></script>
+  </body>
+</html>
