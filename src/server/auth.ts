@@ -111,6 +111,7 @@ export function publicUser(user: User) {
     name: user.name,
     digestHour: user.digestHour,
     timezone: user.timezone,
+    inAppPopups: user.inAppPopups,
     hasApiToken: Boolean(user.apiTokenHash),
   };
 }

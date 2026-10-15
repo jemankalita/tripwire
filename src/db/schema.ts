@@ -19,6 +19,10 @@ export const users = sqliteTable("users", {
   digestHour: integer("digest_hour").notNull().default(9),
   timezone: text("timezone").notNull().default("UTC"),
   lastDigestDate: text("last_digest_date"),
+  /** In-app alerts newer than this are unread. */
+  alertsSeenAt: integer("alerts_seen_at"),
+  /** Show pop-up alerts while Tripwire is open. */
+  inAppPopups: integer("in_app_popups", { mode: "boolean" }).notNull().default(true),
   createdAt: createdAt(),
 });
 

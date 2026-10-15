@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { api, useMe, type Me } from "@/lib/api";
-import { Button, Field, Input, Skeleton } from "@/components/ui/controls";
+import { Button, Field, Input, Skeleton, Switch } from "@/components/ui/controls";
 import { useToast } from "@/components/ui/toast";
 import { Channels } from "./Channels";
 
@@ -36,6 +36,19 @@ function SettingsBody({ data, mutate }: { data: Me; mutate: () => Promise<unknow
   const [name, setName] = useState(data.user.name);
   const [digestHour, setDigestHour] = useState(data.user.digestHour);
   const [timezone, setTimezone] = useState(data.user.timezone);
+  const [popups, setPopups] = useState(data.user.inAppPopups);
+
+  const togglePopups = async (next: boolean) => {
+    setPopups(next);
+    try {
+      await api("/api/me", { method: "PATCH", body: { inAppPopups: next } });
+      await mutate();
+      toast({ tone: "success", title: next ? "Pop-up alerts on" : "Pop-up alerts off", description: next ? undefined : "Alerts still collect under the bell." });
+    } catch (err) {
+      setPopups(!next);
+      toast({ tone: "error", title: "Couldn’t save", description: (err as Error).message });
+    }
+  };
   const [saving, setSaving] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [issuing, setIssuing] = useState(false);
@@ -81,6 +94,17 @@ function SettingsBody({ data, mutate }: { data: Me; mutate: () => Promise<unknow
 
       <Section title="Alert channels" description="Every enabled channel gets each alert exactly once — retries never double-send.">
         <Channels features={data.features} />
+      </Section>
+
+      <Section title="In-app alerts" description="Every alert also appears under the bell in the top bar. Choose whether new ones pop up while Tripwire is open.">
+        <div className="max-w-xl rounded-[10px] bg-panel px-4 py-3.5">
+          <Switch
+            checked={popups}
+            onChange={togglePopups}
+            label="Pop-up alerts"
+            description="Show a pop-up with a link to the change as soon as an alert arrives."
+          />
+        </div>
       </Section>
 
       <Section title="Daily digest" description="Watches set to “daily digest” are batched into one message at this hour. Outages still alert immediately.">

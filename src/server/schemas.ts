@@ -98,5 +98,6 @@ export const settingsSchema = z
     name: z.string().trim().min(1).max(80),
     digestHour: z.number().int().min(0).max(23),
     timezone: z.string().refine(isValidTimezone, "Unknown time zone"),
+    inAppPopups: z.boolean(),
   })
   .partial();

@@ -257,6 +257,29 @@ describe("Browser extension", () => {
   });
 });
 
+describe("In-app alerts", () => {
+  it("lists alerted changes as unread under the bell, then clears them when marked read", async () => {
+    const { GET, POST } = await import("@/app/api/alerts/route");
+    const token = await m.auth.rotateApiToken(userId);
+    const call = async (method: "GET" | "POST") => {
+      const handler = method === "GET" ? GET : POST;
+      const res = await handler(new Request("http://x/api/alerts", { method, headers: { authorization: `Bearer ${token}` } }), { params: Promise.resolve({}) });
+      return (await res.json()) as { ok: boolean; data: { alerts: Array<{ kind: string; unread: boolean; watchName: string }>; unread: number } };
+    };
+
+    const before = await call("GET");
+    expect(before.ok).toBe(true);
+    expect(before.data.unread).toBeGreaterThan(0);
+    expect(before.data.alerts.some((a) => a.kind === "content" && a.unread)).toBe(true);
+
+    await call("POST");
+    const after = await call("GET");
+    expect(after.data.unread).toBe(0);
+    expect(after.data.alerts.every((a) => !a.unread)).toBe(true);
+    expect(after.data.alerts.length).toBe(before.data.alerts.length); // history stays, only read state changes
+  });
+});
+
 describe("Email delivery", () => {
   it("delivers through Resend's HTTPS API when RESEND_API_KEY is set, and keeps an inbox copy", async () => {
     const { vi } = await import("vitest");

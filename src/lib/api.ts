@@ -17,6 +17,15 @@ export type Me = {
   features: { ai: boolean; email: "resend" | "smtp" | "inbox"; telegram: boolean; confirmDelayMs: number };
 };
 export type InboxEmail = { id: string; to: string; subject: string; html: string; text: string; createdAt: number };
+export type AppAlert = {
+  id: string;
+  kind: "content" | "keyword" | "number" | "down" | "up";
+  watchId: string;
+  watchName: string;
+  summary: string;
+  createdAt: number;
+  unread: boolean;
+};
 
 export class ApiError extends Error {
   constructor(
@@ -85,6 +94,10 @@ export function useChannels() {
 
 export function useMe() {
   return useSWR<Me>("/api/me", fetcher);
+}
+
+export function useAlerts() {
+  return useSWR<{ alerts: AppAlert[]; unread: number }>("/api/alerts", fetcher, { refreshInterval: 5000, revalidateOnFocus: true });
 }
 
 export function useInbox() {

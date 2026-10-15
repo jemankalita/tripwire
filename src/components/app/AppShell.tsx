@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/ui/theme";
 import { ToastProvider } from "@/components/ui/toast";
 import { Wordmark } from "@/components/ui/Wordmark";
 import { AddWatch } from "./AddWatch";
+import { AlertsBell } from "./AlertsBell";
 import { CommandPalette } from "./CommandPalette";
 
 type AppActions = {
@@ -173,6 +174,7 @@ export function AppShell({ user, children }: { user: PublicUser; children: React
                   <Kbd>K</Kbd>
                 </span>
               </button>
+              <AlertsBell popupsDefault={user.inAppPopups} />
               <ThemeToggle />
               <UserMenu user={user} />
             </div>

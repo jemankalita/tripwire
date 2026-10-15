@@ -8,6 +8,13 @@
       "when": 1792013943138,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792095673991,
+      "tag": "0001_in_app_alerts",
+      "breakpoints": true
     }
   ]
 }

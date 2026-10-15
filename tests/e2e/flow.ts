@@ -106,6 +106,17 @@ async function main(): Promise<void> {
     await shot(page, "11-detail-slider");
     log("visual heat map and slider comparisons render");
 
+    // In-app alert: the bell shows it as unread, the panel lists it, opening marks it read
+    const bell = page.getByRole("button", { name: /^Alerts, \d+ unread$/ });
+    await bell.waitFor({ timeout: 30_000 });
+    await bell.click();
+    await page.getByRole("dialog", { name: "Alerts" }).getByText("$24.00").first().waitFor();
+    await page.waitForTimeout(400); // let the panel finish fading in
+    await shot(page, "12a-alerts-bell");
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Alerts", exact: true }).waitFor({ timeout: 10_000 });
+    log("in-app alert appeared under the bell and was marked read");
+
     // Inbox has exactly one alert email
     await page.goto(`${BASE}/app/inbox`);
     const alertEmail = page.getByRole("button", { name: /changed/ });
