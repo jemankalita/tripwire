@@ -40,23 +40,45 @@ export function Showcase({ priceHunk }: { priceHunk: Hunk }) {
   const items = useRef<Array<HTMLDivElement | null>>([]);
   const [active, setActive] = useState(0);
 
+  // The lit panel is whichever one is closest to the row's centre — derived from the
+  // scroll position itself, so the text, the highlight and the arrows always agree.
   useEffect(() => {
     const root = scroller.current;
     if (!root) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const best = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (best) setActive(Number((best.target as HTMLElement).dataset.index));
-      },
-      { root, threshold: [0.55, 0.8] },
-    );
-    items.current.forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
+    let frame = 0;
+    const update = () => {
+      const centre = root.scrollLeft + root.clientWidth / 2;
+      let closest = 0;
+      let best = Infinity;
+      items.current.forEach((el, i) => {
+        if (!el) return;
+        const distance = Math.abs(el.offsetLeft + el.offsetWidth / 2 - centre);
+        if (distance < best) {
+          best = distance;
+          closest = i;
+        }
+      });
+      setActive(closest);
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    };
+    root.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      root.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
   const go = (i: number) => {
+    const root = scroller.current;
     const el = items.current[Math.max(0, Math.min(panels.length - 1, i))];
-    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    if (!root || !el) return;
+    // Scroll only the row (never the page) so the target panel sits exactly in the centre.
+    root.scrollTo({ left: el.offsetLeft + el.offsetWidth / 2 - root.clientWidth / 2, behavior: "smooth" });
   };
 
   return (
