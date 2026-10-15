@@ -2,6 +2,8 @@
 
 > **Demo Round 1 project.** A service that monitors public web pages and alerts you to **meaningful** changes while ignoring noise: timestamps, counters, ads, rotating banners, random tokens, outages and CAPTCHAs.
 
+**🔗 Live app: [tripwire.up.railway.app](https://tripwire.up.railway.app)** · sign up and start watching a page in under a minute.
+
 ![Tripwire landing page: "Real changes, not noise." with a live, working demo](docs/screenshots/landing.webp)
 
 Tripwire renders each page in a real headless browser and learns what changes on every load. It alerts you **once**, by email, Discord or Telegram, only when something you care about really moved. Each alert carries a one-line summary and a link to the diff.
@@ -14,20 +16,21 @@ Tripwire renders each page in a real headless browser and learns what changes on
 2. [How each requirement is met](#how-each-requirement-is-met)
 3. [The four hard questions](#the-four-hard-questions)
 4. [Screenshots](#screenshots)
-5. [Quick start](#quick-start)
-6. [3-minute demo script](#3-minute-demo-script)
-7. [Architecture](#architecture)
-8. [How a check works](#how-a-check-works)
-9. [Noise filtering, layer by layer](#noise-filtering-layer-by-layer)
-10. [Bonus features](#bonus-features)
-11. [Browser extension](#browser-extension)
-12. [Design and UX](#design-and-ux)
-13. [Testing](#testing)
-14. [Configuration](#configuration)
-15. [Security](#security)
-16. [Known limitations](#known-limitations)
-17. [Project structure](#project-structure)
-18. [Credits](#credits)
+5. [Live deployment](#live-deployment)
+6. [Quick start](#quick-start)
+7. [3-minute demo script](#3-minute-demo-script)
+8. [Architecture](#architecture)
+9. [How a check works](#how-a-check-works)
+10. [Noise filtering, layer by layer](#noise-filtering-layer-by-layer)
+11. [Bonus features](#bonus-features)
+12. [Browser extension](#browser-extension)
+13. [Design and UX](#design-and-ux)
+14. [Testing](#testing)
+15. [Configuration](#configuration)
+16. [Security](#security)
+17. [Known limitations](#known-limitations)
+18. [Project structure](#project-structure)
+19. [Credits](#credits)
 
 ---
 
@@ -64,7 +67,7 @@ Tripwire renders each page in a real headless browser and learns what changes on
 | 4 | Noise filtering and sensitivity | Seven layers, [described below](#noise-filtering-layer-by-layer): frozen clock and seeded randomness in the browser, ad/tracker blocking, regex normalizers, auto-calibration, rotation memory, a confirmation render and a flap guard. Sensitivity is low/medium/high. |
 | 5 | Visual region picker (CSS selectors) | Click regions on Tripwire's own screenshot of the page to **Watch**, **Ignore** or **Track a number** (`src/components/app/Picker.tsx`). The renderer emits an element map with deterministic CSS selectors, and regions that changed during calibration arrive pre-marked as auto-ignored. |
 | 6 | Text diff, highlighted screenshot diff, side-by-side of any two versions | Four views (`src/components/app/detail/`): **Text** (inline or split, word-level highlights, noise-only hunks folded away), **Visual** (pixelmatch heat map with changed regions outlined), **Side by side** (scroll-synced), **Slider** (before/after). Any two versions can be compared from the timeline (A/B). |
-| 7 | Email + Telegram/Discord, summary + diff link, no duplicates, digest | `src/server/notify.ts`. Every alert has a headline (AI or built-in), stats and a public `/share/<token>` diff link. No duplicates **by construction**: `UNIQUE(watch, dedupe_key)` on changes and `UNIQUE(change, channel)` on deliveries. Retries resend only failed channels. The daily digest is sent at the user's chosen hour in their time zone. |
+| 7 | Email + Telegram/Discord, summary + diff link, no duplicates, digest | `src/server/notify.ts`. Every alert has a headline (AI or built-in), stats and a public `/share/<token>` diff link. No duplicates **by construction**: `UNIQUE(watch, dedupe_key)` on changes and `UNIQUE(change, channel)` on deliveries. Retries resend only failed channels. The daily digest is sent at the user's chosen hour in their time zone. Every alert also appears **in the app**: a bell with an unread count, plus optional pop-ups while Tripwire is open. |
 | 8 | Version timeline and dashboard | The dashboard shows status, last checked, last changed, and a 14-day **pulse line** per page (a seismograph-style trace of changes and outages). The watch page has a version timeline, an event log and a check log. |
 
 ---
@@ -120,6 +123,14 @@ The alerting state machine is a pure, unit-tested function (`src/core/decide.ts`
 <p align="center"><img src="docs/screenshots/landing-phone.webp" alt="Landing page at phone width" width="300"></p>
 
 ---
+
+## Live deployment
+
+Tripwire is deployed on Railway: **https://tripwire.up.railway.app**
+
+- Health check: [/api/health](https://tripwire.up.railway.app/api/health)
+- Bot policy: [/bot](https://tripwire.up.railway.app/bot)
+- The local-only chaos demo site isn't part of the deployment (production blocks private addresses), so try it with any public page. A GitHub Gist you can edit is perfect for watching a change happen.
 
 ## Quick start
 
